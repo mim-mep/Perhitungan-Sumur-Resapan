@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Sumur Resapan Raba</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f9fcff; }
+    input, select, button { padding: 6px; margin: 5px 0; width: 100%; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #e0f0ff; }
+    .section { margin-bottom: 30px; }
+    .result { margin-top: 20px; background: #eef; padding: 15px; border-radius: 8px; }
+    img { max-width: 100%; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+
+  <div class="section">
+    <h2>📷 Preview Gambar Sumur Resapan</h2>
+    <img src="Sumur_Resapan_Raba.png" alt="Sumur Resapan Raba">
+    <p><strong>Lokasi:</strong> Raba, NTB</p>
+  </div>
+
+  <div class="section">
+    <h2>💧 Distribusi Curah Hujan</h2>
+    <label>Curah Hujan Tahunan (mm):
+      <select id="rainInput">
+        <option value="2676">2023 – 2.676 mm</option>
+        <option value="2998">2024 – 2.998 mm</option>
+        <option value="3100">2025 – 3.100 mm</option>
+      </select>
+    </label>
+    <button onclick="calculateRain()">Hitung Distribusi</button>
+    <div class="result" id="outputDistribusi"></div>
+  </div>
+
+  <div class="section">
+    <h2>🧮 Perhitungan Volume Resapan</h2>
+    <label>Luas Atap Parsial 1 (m²): <input type="number" id="p1" value="432"></label>
+    <label>Luas Atap Parsial 2 (m²): <input type="number" id="p2" value="320"></label>
+    <label>Luas Atap Parsial 3 (m²): <input type="number" id="p3" value="508"></label>
+    <label>Luas Atap Parsial 4 (m²): <input type="number" id="p4" value="385"></label>
+    <label>Durasi Hujan (jam): <input type="number" id="Jam" value="4"></label>
+    <label>Efisiensi Infiltrasi (%): <input type="number" id="efisiensi" value="80"></label>
+    <button onclick="calculateVolume()">Hitung Volume</button>
+    <div class="result" id="outputVolume"></div>
+  </div>
+
+  <script>
+    let literPerHour = 0;
+
+    function calculateRain() {
+      const mm = parseFloat(document.getElementById("rainInput").value);
+      const perMonth = mm / 12;
+      const perDay = perMonth / 30;
+      literPerHour = perDay / 24;
+
+      document.getElementById("outputDistribusi").innerHTML = `
+        🌧️ ${mm.toFixed(2)} liter/m²/tahun<br>
+        📅 ${perMonth.toFixed(2)} liter/m²/bulan<br>
+        🕒 ${perDay.toFixed(2)} liter/m²/hari<br>
+        ⏱️ ${literPerHour.toFixed(2)} liter/m²/jam
+      `;
+    }
+
+    function calculateVolume() {
+      if (!literPerHour) return alert("Hitung distribusi hujan dulu.");
+
+      const jam = parseFloat(document.getElementById("Jam").value);
+      const ef = parseFloat(document.getElementById("efisiensi").value) / 100;
+      const areas = ["p1", "p2", "p3", "p4"].map(id => parseFloat(document.getElementById(id).value));
+      const names = ["Parsial 1", "Parsial 2", "Parsial 3", "Parsial 4"];
+
+      let totalArea = 0, totalLiter = 0, rows = "", breakdown = "";
+
+      areas.forEach((luas, i) => {
+        const liter = literPerHour * luas * jam * ef;
+        const m3 = liter / 1000;
+        totalArea += luas;
+        totalLiter += liter;
+        rows += `<tr><td>${names[i]}</td><td>${luas.toFixed(2)}</td><td>${m3.toFixed(2)}</td></tr>`;
+        breakdown += `<div>${names[i]}: ${literPerHour.toFixed(2)} × ${luas.toFixed(2)} × ${jam} × ${ef.toFixed(2)} = ${liter.toFixed(2)} liter → ${m3.toFixed(2)} m³</div>`;
+      });
+
+      const totalM3 = totalLiter / 1000;
+
+      // Konversi ke bentuk geometris
+      const sisiKubus = Math.cbrt(totalM3);
+      const diameterSilinder = 1; // meter
+      const luasPenampangSilinder = Math.PI * Math.pow(diameterSilinder / 2, 2);
+      const tinggiSilinder = totalM3 / luasPenampangSilinder;
+
+      const konversiHTML = `
+        <h3>🔄 Konversi Volume</h3>
+        <p><strong>Kubus:</strong> Volume ${totalM3.toFixed(2)} m³ → Sisi: ${sisiKubus.toFixed(2)} m</p>
+        <p><strong>Silinder:</strong> Volume ${totalM3.toFixed(2)} m³ → Diameter: ${diameterSilinder} m, Tinggi: ${tinggiSilinder.toFixed(2)} m</p>
+      `;
+
+      document.getElementById("outputVolume").innerHTML = `
+        <h3>📊 Tabel Volume Resapan</h3>
+        <table>
+          <tr><th>Area</th><th>Luas (m²)</th><th>Volume (m³)</th></tr>
+          ${rows}
+          <tr style="font-weight:bold; background:#f0f8ff;">
+            <td>Total</td><td>${totalArea.toFixed(2)}</td><td>${totalM3.toFixed(2)}</td>
+          </tr>
+        </table>
+        <h3>📐 Rumus</h3>
+        <p>Volume (liter) = Curah Hujan × Luas × Jam × Efisiensi<br>Volume (m³) = liter / 1000</p>
+        <h3>🔍 Breakdown</h3>
+        ${breakdown}
+        <div><strong>Total:</strong> ${literPerHour.toFixed(2)} × ${totalArea.toFixed(2)} × ${jam} × ${ef.toFixed(2)} = ${totalLiter.toFixed(2)} liter → ${totalM3.toFixed(2)} m³</div>
+        ${konversiHTML}
+      `;
+    }
+  </script>
+</body>
+</html>
